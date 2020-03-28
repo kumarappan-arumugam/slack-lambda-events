@@ -45,7 +45,7 @@ class SlackEventsAdapter(AsyncIOEventEmitter):
     #     except AttributeError:
     #         return False
 
-    def make_response(self, message='', code=200, statusDescription='', isBase64Encoded=False, multiValueHeaders=None):
+    def make_response(self, message='', code=200, statusDescription='', isBase64Encoded=False, headers=None):
 
         def is_json():
             try:
@@ -55,13 +55,13 @@ class SlackEventsAdapter(AsyncIOEventEmitter):
             return True
 
         # set right headers
-        if multiValueHeaders is None:
-            multiValueHeaders = {'X-Slack-Powered-By': [self.package_info]}
+        if headers is None:
+            headers = {'X-Slack-Powered-By': self.package_info}
         else:
-            multiValueHeaders['X-Slack-Powered-By'] = [self.package_info]
+            headers['X-Slack-Powered-By'] = self.package_info
         if is_json():
-            multiValueHeaders['Content-Type'] = ["application/json"]
-            multiValueHeaders['Set-cookie'] = ["cookies"]
+            headers['Content-Type'] = "application/json"
+            headers['Set-cookie'] = "cookies"
 
         if code == 200:
             statusDescription = '200 OK'
@@ -69,7 +69,7 @@ class SlackEventsAdapter(AsyncIOEventEmitter):
         return dict(statusCode=code,
                     statusDescription=statusDescription,
                     isBase64Encoded=isBase64Encoded,
-                    multiValueHeaders=multiValueHeaders,
+                    headers=headers,
                     body=message)
 
     def get_package_info(self):
@@ -144,7 +144,7 @@ class SlackEventsAdapter(AsyncIOEventEmitter):
         # Each request comes with request timestamp and request signature
         # emit an error if the timestamp is out of range
         try:
-            req_timestamp = self.request['multiValueHeaders'].get('X-Slack-Request-Timestamp', [])[0]
+            req_timestamp = self.request['headers'].get('X-Slack-Request-Timestamp')
         except IndexError:
             return self.emit_error_and_respond('X-Slack-Request-Timestamp not found in the headers')
         else:
@@ -154,7 +154,7 @@ class SlackEventsAdapter(AsyncIOEventEmitter):
         # Verify the request signature using the app's signing secret
         # emit an error if the signature can't be verified
         try:
-            req_signature = self.request['multiValueHeaders'].get('X-Slack-Signature', [])[0]
+            req_signature = self.request['headers'].get('X-Slack-Signature')
         except IndexError:
             return self.emit_error_and_respond('X-Slack-Signature not found in the headers')
         else:
@@ -168,7 +168,7 @@ class SlackEventsAdapter(AsyncIOEventEmitter):
         # Parse the Event payload and emit the event to the event listener
         if self.event.get('event') and self.event['event'].get('type') in self.accepted_event_types:
             try:
-                if self.request['multiValueHeaders'].get('X-Slack-Retry-Num', [])[0]:
+                if self.request['headers'].get('X-Slack-Retry-Num'):
                     # if it's a retried event
                     self.event['event']['retry'] = True
             except IndexError:
