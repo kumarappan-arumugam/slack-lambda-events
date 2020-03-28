@@ -1,2 +1,1 @@
-setuptools>=20.3.1
-pypd
+pyee==5.0.0

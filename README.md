@@ -1,43 +1,104 @@
-# Sentry Pagerduty
+Slack Events API adapter for AWS Lambda
+=======================================
 
-Plugin for Sentry which allows sending notification via  [Pagerduty](https://www.pagerduty.com/) service.
+The Slack Events Adapter is a Python-based solution to receive and parse events
+from Slack’s Events API through AWS Lambda via ALB. This library uses an event emitter framework to allow
+you to easily process Lambda Slack events from AWS ALB (Application load balancer) by simply attaching functions
+to event listeners.
 
-## Installation
+This adapter enhances and simplifies Slack's Events API by incorporating useful best practices, patterns, and opportunities to abstract out common tasks.
 
-1.  Install this package
-	`pip install https://github.com/kumarappan-arumugam/sentry-pagerduty/archive/master.zip`
-2.  Restart your Sentry service.
-3.  Go to your Sentry web interface. Open  organization `Settings`  page.
-4.  On  `Integrations`, find  `Pagerduty`  plugin and install it.
-5.  Configure plugin on  `Configure plugin`  page.
-    See  [Pagerduty's documentation](https://www.pagerduty.com/docs/guides/sentry-integration-guide/)  to know how to create  `API key`.
-    *Note*: Documentation for sentry configuration on pagerduty page is for [legacy integration](https://help.sentry.io/hc/en-us/articles/360003063454-What-are-Global-versus-Legacy-integrations).
-6.  Done!
+💡  Slack has written a `blog post which explains how`_ the Events API can help you, why we built these tools, and how you can use them to build production-ready Slack apps.
 
-## FAQ
+.. _blog post which explains how: https://medium.com/@SlackAPI/enhancing-slacks-events-api-7535827829ab
 
-1. Do incidents that are triggered in PagerDuty create a new Issue in Sentry?
 
-	No, the integration only sends information from Sentry to PagerDuty. This is not a 2-way integration.
+🤖  Installation
+----------------
 
-2. If an incident is resolved in PagerDuty, is the issue resolved in Sentry, or vice versa?
+.. code:: shell
 
-	No, the current integration only sends the trigger information from Sentry to PagerDuty.
+  pip install slacklambdaevents
 
-3. Can I setup multiple Sentry Projects be tied to the same PagerDuty service?
+🤖  App Setup
+--------------------
 
-	Yes! When you are creating the new Project in Sentry, simply use the same Integration Key as the PagerDuty service where you wish to have the alerts trigger.
+Before you can use the `Events API`_ you must
+`create a Slack App`_, and turn on
+`Event Subscriptions`_.
 
-4. Can I setup multiple pagerduty services be tied to the same sentry project?
+💡  When you add the Request URL to your app's Event Subscription settings,
+Slack will send a request containing a `challenge` code to verify that your
+server is alive. This package handles that URL Verification event for you, so
+all you need to do is plug the adapter in the lambda function and start using it.
 
-	Yes! Since this uses the new Pagerduty Events API, you can simply use the different service names to route to different services where you wish to have the alerts trigger.
+✅  Once you have your `Request URL` verified, your app is ready to start
+receiving Events.
 
-## Setup
+🔑  Your server will begin receiving Events from Slack's Events API as soon as a
+user has authorized your app.
 
-* [Step 1](_images/Step-1.png?raw=true "Step 1")
-* [Step 2](_images/Step-2.png?raw=true "Step 2")
-* [Step 3](_images/Step-3.png?raw=true "Step 3")
-* [Step 4](_images/Step-4.png?raw=true "Step 4")
-* [Step 5](_images/Step-5.png?raw=true "Step 5")
-* [Step 6](_images/Step-6.png?raw=true "Step 6")
-* [Step 7](_images/Step-7.png?raw=true "Step 7")
+🤖  Development workflow:
+===========================
+
+(1) Create a Slack app on https://api.slack.com/apps
+(2) Add a `bot user` for your app
+(3) Start the example app on your **Request URL** endpoint
+(4) Create Lambda and ALB endpoint and copy the **HTTPS** URL
+(5) Add your **Request URL** and subscribe your app to events
+(6) Go to your ALB URL and auth your app
+
+**🎉 Once your app has been authorized, you will begin receiving Slack Events**
+
+
+🤖  Usage
+----------
+  **⚠️  Keep your app's credentials safe!**
+
+  - For development, keep them in virtualenv variables.
+
+  - For production, use a secure data store.
+
+  - Never post your app's credentials to github.
+
+.. code:: python
+
+  SLACK_SIGNING_SECRET = os.environ["SLACK_SIGNING_SECRET"]
+
+Create a Slack Event Adapter for receiving actions via the Events API
+-----------------------------------------------------------------------
+
+.. code:: python
+
+  from slacklambdaevents import SlackEventsAdapter
+
+
+  slack_events_adapter = SlackEventsAdapter(lamdbaEvent, SLACK_SIGNING_SECRET)
+
+
+  # Create an event listener for "reaction_added" events and print the emoji name
+  @slack_events_adapter.on("reaction_added")
+  def reaction_added(event_data):
+    emoji = event_data["event"]["reaction"]
+    print(emoji)
+
+
+For a comprehensive list of available Slack `Events` and more information on
+`Scopes`, see https://api.slack.com/events-api
+
+🤖  Example event listeners
+-----------------------------
+
+See `example.py`_ for usage examples. This example also utilizes the
+SlackClient Web API client.
+
+.. _example.py: /example/
+
+🤔  Support
+-----------
+
+.. _Events API: https://api.slack.com/events-api
+.. _create a Slack App: https://api.slack.com/apps/new
+.. _Event Subscriptions: https://api.slack.com/events-api#subscriptions
+.. _Slack Community: http://slackcommunity.com/
+.. _create an Issue: https://github.com/slackapi/python-slack-events-api/issues/new
