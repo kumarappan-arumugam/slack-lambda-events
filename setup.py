@@ -44,6 +44,7 @@ setup(
     long_description=long_description,
     url='https://github.com/kumarappan-arumugam/slack-lambda-events',
     packages=find_packages(),
+    package_dir={'slacklambdaevents': 'src'},
     install_requires=get_requirements(),
     include_package_data=True,
     classifiers=[
